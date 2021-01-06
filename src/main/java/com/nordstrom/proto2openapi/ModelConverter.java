@@ -52,6 +52,8 @@ import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
+
+import java.math.BigDecimal;
 import java.util.AbstractMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -209,7 +211,7 @@ public class ModelConverter {
       if (objType instanceof MessageType) {
         oaSchemas.put(name, messageTypeToSchema((MessageType) objType));
       } else if (objType instanceof EnumType) {
-        oaSchemas.put(name, enumTypeToSchema((EnumType) objType));
+        oaSchemas.put(name, enumTypeToSchema((EnumType) objType, type.simpleName()));
       } else {
         throw new IllegalArgumentException("Invalid proto type " + type);
       }
@@ -226,12 +228,13 @@ public class ModelConverter {
             type.fields().stream().collect(Collectors.toMap(Field::name, this::fieldToSchema)));
   }
 
-  private io.swagger.v3.oas.models.media.Schema enumTypeToSchema(final EnumType type) {
+  private io.swagger.v3.oas.models.media.Schema enumTypeToSchema(final EnumType type, String name) {
     val schema =
         new io.swagger.v3.oas.models.media.Schema<>()
-            .description(type.documentation())
-            .type(JSON_STRING);
-    schema.setEnum(type.constants().stream().map(EnumConstant::name).collect(Collectors.toList()));
+            .description(type.documentation() + " " + name)
+            .type("integer");
+    schema.setMaximum(BigDecimal.valueOf(type.constants().size()));
+    schema.setMinimum(BigDecimal.valueOf(1));
     return schema;
   }
 
