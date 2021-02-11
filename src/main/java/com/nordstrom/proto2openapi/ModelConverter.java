@@ -77,6 +77,7 @@ public class ModelConverter {
   private static final String JSON_BOOLEAN = "boolean";
   private static final String JSON_STRING = "string";
   private static final String JSON_NUMBER = "number";
+  private static final String JSON_INT = "integer";
   private static final String JSON_OBJECT = "object";
   private static final String JSON_ARRAY = "array";
 
@@ -86,17 +87,17 @@ public class ModelConverter {
           .put(BYTES, JSON_STRING)
           .put(DOUBLE, JSON_NUMBER)
           .put(FLOAT, JSON_NUMBER)
-          .put(FIXED32, JSON_NUMBER)
-          .put(FIXED64, JSON_STRING)
-          .put(INT32, JSON_NUMBER)
-          .put(INT64, JSON_STRING)
-          .put(SFIXED32, JSON_NUMBER)
-          .put(SFIXED64, JSON_STRING)
-          .put(SINT32, JSON_NUMBER)
-          .put(SINT64, JSON_STRING)
+          .put(FIXED32, JSON_INT)
+          .put(FIXED64, JSON_INT)
+          .put(INT32, JSON_INT)
+          .put(INT64, JSON_INT)
+          .put(SFIXED32, JSON_INT)
+          .put(SFIXED64, JSON_INT)
+          .put(SINT32, JSON_INT)
+          .put(SINT64, JSON_INT)
           .put(STRING, JSON_STRING)
-          .put(UINT32, JSON_NUMBER)
-          .put(UINT64, JSON_STRING)
+          .put(UINT32, JSON_INT)
+          .put(UINT64, JSON_INT)
           .build();
 
   private final Schema protoSchema;
@@ -200,8 +201,15 @@ public class ModelConverter {
   }
 
   private io.swagger.v3.oas.models.media.Schema fieldToSchema(final Field field) {
-    val schema = typeToSchema(field.type());
-    return schema.description(field.documentation());
+    if (field.isRepeated()) {
+      val schema = new io.swagger.v3.oas.models.media.ArraySchema();
+      schema.setItems(typeToSchema(field.type()));
+      return schema;
+    } else {
+      val schema = typeToSchema(field.type());
+      schema.description(field.documentation());
+      return schema;
+    }
   }
 
   private String typeToRef(final ProtoType type) {
@@ -231,8 +239,8 @@ public class ModelConverter {
   private io.swagger.v3.oas.models.media.Schema enumTypeToSchema(final EnumType type, String name) {
     val schema =
         new io.swagger.v3.oas.models.media.Schema<>()
-            .description(type.documentation() + " " + name)
-            .type("integer");
+            .description(type.documentation() + " " + name);
+    schema.setType("integer");
     schema.setMaximum(BigDecimal.valueOf(type.constants().size()));
     schema.setMinimum(BigDecimal.valueOf(1));
     return schema;
